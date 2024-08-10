@@ -6,9 +6,18 @@
     <title>Document</title>
   </head>
   <body>
-    <label for="email">Email</label>
-    <input name="email" class="email" type="email" />
-    <button class="register">Register</button>
+    <div>
+      <h2>Registration</h2>
+      <label for="email">Email</label>
+      <input name="email" class="email" type="email" />
+      <button class="register">Register</button>
+    </div>
+    <div>
+      <h2>Login</h2>
+      <label for="email-login">Email</label>
+      <input name="email-login" class="email-login" type="email" />
+      <button class="register">Register</button>
+    </div>
   </body>
   <script>
     const register = document.querySelector(".register");
@@ -44,55 +53,88 @@
 
     register.addEventListener("click", async () => {
       const uuid = crypto.randomUUID();
-      if (email.value !== "") {
-        const registrationOptions = {
-          challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
-          rp: {
-            name: "Test",
-            id: window.location.hostname,
-          },
-          user: {
-            id: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
-            name: email.value,
-            displayName: email.value,
-          },
-          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
-          },
-          timeout: 60000,
-          attestation: "direct",
-        };
-
-        const credential = await navigator.credentials.create({
-          publicKey: registrationOptions,
-        });
-
-        const credentialData = {
-          id: credential.id,
-          rawId: arrayBufferToBase64(credential.rawId),
-          type: credential.type,
-          response: {
-            clientDataJSON: arrayBufferToBase64(
-              credential.response.clientDataJSON
-            ),
-            attestationObject: arrayBufferToBase64(
-              credential.response.attestationObject
-            ),
-          },
-        };
-
-        console.log("Credential created:", credential);
-        console.log("CredentialData created:", credentialData);
-        alert("Registration successful!");
-
-        localStorage.setItem(
-          "webauthn_credential",
-          JSON.stringify(credentialData)
-        );
-      } else {
+      if (email.value === "" || !email.value) {
         window.alert("Please enter an email");
+        return;
       }
+      const registrationOptions = {
+        challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+        rp: {
+          name: "Test",
+          id: window.location.hostname,
+        },
+        user: {
+          id: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+          name: email.value,
+          displayName: email.value,
+        },
+        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+        },
+        timeout: 60000,
+        attestation: "direct",
+      };
+
+      const credential = await navigator.credentials.create({
+        publicKey: registrationOptions,
+      });
+
+      // We need to convert to base64, otherwise, ArrayBuffer can't be stored
+      const credentialData = {
+        id: credential.id,
+        rawId: arrayBufferToBase64(credential.rawId),
+        type: credential.type,
+        response: {
+          clientDataJSON: arrayBufferToBase64(
+            credential.response.clientDataJSON
+          ),
+          attestationObject: arrayBufferToBase64(
+            credential.response.attestationObject
+          ),
+        },
+      };
+
+      console.log("Credential created:", credential);
+      console.log("CredentialData created:", credentialData);
+      window.alert("Registration successful!");
+
+      localStorage.setItem(email.value, JSON.stringify(credentialData));
+    });
+
+    const emailLogin = document.querySelector(".email-login");
+    const login = document.querySelector(".email-login");
+
+    login.addEventListener("click", async () => {
+      const uuid = crypto.randomUUID();
+      if (email.value === "" || !email.value) {
+        window.alert("Please enter an email");
+        return;
+      }
+      const storedCredentials = localStorage.getItem(emailLogin.value);
+      if (!storedCredentials) {
+        window.alert("User not yet registered");
+        return;
+      }
+      const storedJSONCredentials = JSON.parse(storedCredentials);
+      const authenticationOptions = {
+        challenge: uuidToUint8Array(uuid),
+        rpId: window.location.hostname,
+        allowCredentials: [
+          {
+            id: base64ToArrayBuffer(storedJSONCredentials.rawId),
+            type: "public-key",
+            transports: ["internal"],
+          },
+        ],
+        timeout: 60000,
+        userVerification: "preferred",
+      };
+      const assertion = await navigator.credentials.get({
+        publicKey: authenticationOptions,
+      });
+      console.log("Assertion received:", assertion);
+      window.alert("Authentication successful!");
     });
   </script>
 </html>
