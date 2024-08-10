@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <label for="email">Email</label>
+    <input name="email" class="email" type="email" />
+    <button class="register">Register</button>
+  </body>
+  <script>
+    const register = document.querySelector(".register");
+    const email = document.querySelector(".email");
+
+    function uuidToUint8Array(uuid) {
+      const bytes = [];
+      uuid.replace(/[a-fA-F0-9]{2}/g, (hex) => {
+        bytes.push(parseInt(hex, 16));
+      });
+      return new Uint8Array(bytes);
+    }
+
+    register.addEventListener("click", async () => {
+      const uuid = crypto.randomUUID();
+      if (email.value !== "") {
+        const registrationOptions = {
+          challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+          rp: {
+            name: "Test",
+            id: "127.0.0.1",
+          },
+          user: {
+            id: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+            name: email.value,
+            displayName: email.value,
+          },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+          },
+          timeout: 60000,
+          attestation: "direct",
+        };
+
+        const credential = await navigator.credentials.create({
+          publicKey: registrationOptions,
+        });
+
+        console.log("Credential created:", credential);
+        alert("Registration successful!");
+
+        localStorage.setItem("webauthn_credential", JSON.stringify(credential));
+      } else {
+        window.alert("Please enter an email");
+      }
+    });
+  </script>
+</html>
