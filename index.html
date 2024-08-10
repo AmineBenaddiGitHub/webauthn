@@ -22,6 +22,26 @@
       return new Uint8Array(bytes);
     }
 
+    function arrayBufferToBase64(buffer) {
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
     register.addEventListener("click", async () => {
       const uuid = crypto.randomUUID();
       if (email.value !== "") {
@@ -48,10 +68,28 @@
           publicKey: registrationOptions,
         });
 
+        const credentialData = {
+          id: credential.id,
+          rawId: arrayBufferToBase64(credential.rawId),
+          type: credential.type,
+          response: {
+            clientDataJSON: arrayBufferToBase64(
+              credential.response.clientDataJSON
+            ),
+            attestationObject: arrayBufferToBase64(
+              credential.response.attestationObject
+            ),
+          },
+        };
+
         console.log("Credential created:", credential);
+        console.log("CredentialData created:", credentialData);
         alert("Registration successful!");
 
-        localStorage.setItem("webauthn_credential", JSON.stringify(credential));
+        localStorage.setItem(
+          "webauthn_credential",
+          JSON.stringify(credentialData)
+        );
       } else {
         window.alert("Please enter an email");
       }
